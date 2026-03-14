@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WildFireAudio — Custom Player</title>
+  <meta name="description" content="A fully customizable HTML5 audio player with visualizer, equalizer, playlist, and keyboard shortcuts.">
+  <link rel="stylesheet" href="player.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     WILDFIRE AUDIO PLAYER
+     ════════════════════════════════════════════════════════════ -->
+<div class="wfa-player" role="region" aria-label="WildFireAudio Player">
+
+  <!-- ── Drop zone overlay (drag & drop) ── -->
+  <div class="wfa-drop-zone" aria-hidden="true">Drop audio files here</div>
+
+  <!-- ── Header ── -->
+  <header class="wfa-header">
+    <span class="wfa-logo">🔥 WildFireAudio</span>
+    <div class="wfa-header-actions">
+      <!-- Upload local files -->
+      <button id="wfa-upload-btn" class="wfa-icon-btn" title="Add files" aria-label="Add audio files">
+        <span aria-hidden="true">📂</span>
+      </button>
+      <input type="file" id="wfa-file-input" accept="audio/*" multiple hidden>
+
+      <!-- EQ toggle -->
+      <button id="wfa-eq-btn" class="wfa-icon-btn" title="Equalizer" aria-label="Toggle equalizer" aria-expanded="false">
+        <span aria-hidden="true">🎚️</span>
+      </button>
+
+      <!-- Playlist toggle -->
+      <button id="wfa-playlist-btn" class="wfa-icon-btn" title="Playlist" aria-label="Toggle playlist" aria-expanded="false">
+        <span aria-hidden="true">📋</span>
+      </button>
+
+      <!-- Keyboard shortcuts help -->
+      <button id="wfa-shortcuts-btn" class="wfa-icon-btn" title="Keyboard shortcuts" aria-label="Show keyboard shortcuts">
+        <span aria-hidden="true">⌨️</span>
+      </button>
+
+      <!-- Theme toggle -->
+      <button id="wfa-theme-btn" class="wfa-icon-btn" title="Toggle theme" aria-label="Toggle light/dark theme">
+        <span id="wfa-theme-icon" aria-hidden="true">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Frequency visualizer ── -->
+  <div class="wfa-visualizer" aria-hidden="true">
+    <canvas id="wfa-canvas"></canvas>
+  </div>
+
+  <!-- ── Now Playing ── -->
+  <section class="wfa-now-playing" aria-label="Now playing">
+    <div class="wfa-artwork-wrap">
+      <img id="wfa-artwork" class="wfa-artwork" src="https://picsum.photos/seed/fire1/80/80" alt="Track artwork">
+      <div class="wfa-artwork-overlay" aria-hidden="true"></div>
+    </div>
+
+    <div class="wfa-track-info">
+      <div id="wfa-track-title"  class="wfa-track-title" aria-live="polite">Campfire Nights</div>
+      <div id="wfa-track-artist" class="wfa-track-artist">WildFire Sessions</div>
+      <div id="wfa-track-album"  class="wfa-track-album">Acoustic Vol. 1</div>
+    </div>
+
+    <!-- Favourite -->
+    <button id="wfa-fav-btn" class="wfa-icon-btn wfa-favourite-btn" aria-label="Add to favourites" title="Favourite">
+      <span id="wfa-fav-icon" aria-hidden="true">♡</span>
+    </button>
+  </section>
+
+  <!-- ── Progress / Seek bar ── -->
+  <div class="wfa-progress-section">
+    <div class="wfa-time-row">
+      <span id="wfa-current-time" aria-live="off">0:00</span>
+      <span id="wfa-duration">3:42</span>
+    </div>
+    <input
+      type="range"
+      id="wfa-progress"
+      class="wfa-range"
+      min="0" max="100" value="0" step="0.1"
+      aria-label="Seek position"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+    >
+  </div>
+
+  <!-- ── Controls row ── -->
+  <div class="wfa-controls">
+
+    <!-- Left cluster: shuffle + repeat -->
+    <div class="wfa-controls-left">
+      <button id="wfa-shuffle-btn" class="wfa-icon-btn" aria-label="Toggle shuffle" title="Shuffle (S)">
+        <span aria-hidden="true">🔀</span>
+      </button>
+      <button id="wfa-repeat-btn" class="wfa-icon-btn" aria-label="Toggle repeat" title="Repeat (R)">
+        <span id="wfa-repeat-icon" aria-hidden="true">🔁</span>
+      </button>
+    </div>
+
+    <!-- Centre cluster: prev + play/pause + next -->
+    <div class="wfa-controls-center">
+      <button id="wfa-prev-btn" class="wfa-icon-btn" aria-label="Previous track" title="Previous (P)">
+        <span aria-hidden="true">⏮</span>
+      </button>
+
+      <button id="wfa-play-btn" class="wfa-play-btn" aria-label="Play" title="Play / Pause (Space)">
+        <span id="wfa-play-icon" aria-hidden="true">▶</span>
+      </button>
+
+      <button id="wfa-next-btn" class="wfa-icon-btn" aria-label="Next track" title="Next (N)">
+        <span aria-hidden="true">⏭</span>
+      </button>
+    </div>
+
+    <!-- Right cluster: mute + volume slider + speed -->
+    <div class="wfa-controls-right">
+      <div class="wfa-volume-section">
+        <button id="wfa-volume-btn" class="wfa-icon-btn" aria-label="Mute / Unmute" title="Mute (M)">
+          <span id="wfa-volume-icon" aria-hidden="true">🔊</span>
+        </button>
+        <input
+          type="range"
+          id="wfa-volume-slider"
+          class="wfa-range wfa-volume-slider"
+          min="0" max="100" value="80" step="1"
+          aria-label="Volume"
+        >
+      </div>
+      <select id="wfa-speed" class="wfa-speed-select" aria-label="Playback speed" title="Playback speed">
+        <option value="0.5">0.5×</option>
+        <option value="0.75">0.75×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.25">1.25×</option>
+        <option value="1.5">1.5×</option>
+        <option value="2">2×</option>
+      </select>
+    </div>
+
+  </div><!-- /.wfa-controls -->
+
+  <!-- ── Equalizer panel ── -->
+  <div id="wfa-eq-panel" class="wfa-eq-panel" role="group" aria-label="Equalizer bands">
+    <div id="wfa-eq-bands" style="display:contents"></div>
+  </div>
+
+  <!-- ── Playlist panel ── -->
+  <div id="wfa-playlist-panel" class="wfa-playlist-panel" role="list" aria-label="Playlist">
+    <div class="wfa-playlist-header">
+      <span>Playlist</span>
+      <span id="wfa-playlist-count">4 tracks</span>
+    </div>
+    <div id="wfa-playlist-items"></div>
+  </div>
+
+  <!-- ── Footer / hints ── -->
+  <footer class="wfa-footer">
+    <kbd>Space</kbd> Play &nbsp;
+    <kbd>←→</kbd> Seek 5s &nbsp;
+    <kbd>↑↓</kbd> Volume &nbsp;
+    <kbd>N</kbd><kbd>P</kbd> Next/Prev &nbsp;
+    <kbd>M</kbd> Mute &nbsp;
+    <kbd>S</kbd> Shuffle &nbsp;
+    <kbd>R</kbd> Repeat &nbsp;
+    <kbd>?</kbd> Help
+  </footer>
+
+</div><!-- /.wfa-player -->
+
+<!-- ── Keyboard shortcuts modal ── -->
+<div id="wfa-shortcuts-modal" class="wfa-shortcuts-modal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="wfa-shortcuts-box">
+    <h2>⌨️ Keyboard Shortcuts</h2>
+
+    <div class="wfa-shortcut-row"><span>Play / Pause</span>         <kbd>Space</kbd></div>
+    <div class="wfa-shortcut-row"><span>Seek forward 5 s</span>    <kbd>→</kbd></div>
+    <div class="wfa-shortcut-row"><span>Seek back 5 s</span>       <kbd>←</kbd></div>
+    <div class="wfa-shortcut-row"><span>Volume up</span>           <kbd>↑</kbd></div>
+    <div class="wfa-shortcut-row"><span>Volume down</span>         <kbd>↓</kbd></div>
+    <div class="wfa-shortcut-row"><span>Next track</span>          <kbd>N</kbd></div>
+    <div class="wfa-shortcut-row"><span>Previous track</span>      <kbd>P</kbd></div>
+    <div class="wfa-shortcut-row"><span>Mute / Unmute</span>       <kbd>M</kbd></div>
+    <div class="wfa-shortcut-row"><span>Toggle shuffle</span>      <kbd>S</kbd></div>
+    <div class="wfa-shortcut-row"><span>Toggle repeat</span>       <kbd>R</kbd></div>
+    <div class="wfa-shortcut-row"><span>Show shortcuts</span>      <kbd>?</kbd></div>
+    <div class="wfa-shortcut-row"><span>Close dialog</span>        <kbd>Esc</kbd></div>
+
+    <button id="wfa-shortcuts-close" class="wfa-shortcuts-close">Close</button>
+  </div>
+</div>
+
+<!-- ── Toast notification ── -->
+<div id="wfa-toast" class="wfa-toast" role="status" aria-live="polite"></div>
+
+<script src="player.js"></script>
+</body>
+</html>
